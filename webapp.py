@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
+import csv
+import io
 import json
+import re
 import shlex
 import subprocess
 import sys
+import time
+import uuid
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from flask import Flask, render_template, request
+from flask import Flask, Response, abort, render_template, request
 
 BASE_DIR = Path(__file__).resolve().parent
 MAIN_PY = BASE_DIR / "main.py"
@@ -16,6 +21,9 @@ app = Flask(__name__)
 SCAN_TYPES = ["network", "web", "system", "lan-scan"]
 SEVERITIES = ["INFO", "LOW", "MEDIUM", "HIGH"]
 SUMMARY_ORDER = ["HIGH", "MEDIUM", "LOW", "INFO"]
+EXPORT_CACHE: Dict[str, Dict] = {}
+EXPORT_TTL_SECONDS = 1800
+EXPORT_MAX_ITEMS = 128
 
 DEFAULT_VALUES = {
     "scan_type": "network",
@@ -76,6 +84,180 @@ def _bool(form, key: str, default: bool = False) -> bool:
 def _add_option(cmd: List[str], flag: str, value: str) -> None:
     if value:
         cmd.extend([flag, value])
+
+
+def prune_export_cache() -> None:
+    now = time.time()
+    expired = [key for key, item in EXPORT_CACHE.items() if (now - item.get("created_at", now)) > EXPORT_TTL_SECONDS]
+    for key in expired:
+        EXPORT_CACHE.pop(key, None)
+
+    if len(EXPORT_CACHE) <= EXPORT_MAX_ITEMS:
+        return
+
+    sorted_items = sorted(EXPORT_CACHE.items(), key=lambda kv: kv[1].get("created_at", 0))
+    for key, _ in sorted_items[: len(EXPORT_CACHE) - EXPORT_MAX_ITEMS]:
+        EXPORT_CACHE.pop(key, None)
+
+
+def store_export_result(result: Dict) -> str:
+    prune_export_cache()
+    export_id = uuid.uuid4().hex
+    EXPORT_CACHE[export_id] = {
+        "created_at": time.time(),
+        "result": result,
+    }
+    return export_id
+
+
+def get_export_result(export_id: str) -> Optional[Dict]:
+    prune_export_cache()
+    item = EXPORT_CACHE.get(export_id)
+    if not item:
+        return None
+    return item.get("result")
+
+
+def safe_filename_fragment(value: str, fallback: str = "report") -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9_-]+", "_", value or "").strip("_")
+    return cleaned or fallback
+
+
+def build_csv_report(result: Dict) -> str:
+    out = io.StringIO()
+    writer = csv.writer(out)
+
+    writer.writerow(["scan_type", result.get("scan_type", "")])
+    writer.writerow(["generated_at_utc", result.get("generated_at_utc", "")])
+    writer.writerow([])
+
+    writer.writerow(["summary_severity", "count"])
+    summary = result.get("summary", {}) or {}
+    for key in SUMMARY_ORDER:
+        writer.writerow([key, summary.get(key, 0)])
+    writer.writerow([])
+
+    writer.writerow(["severity", "title", "details", "recommendation"])
+    for item in result.get("findings", []) or []:
+        writer.writerow(
+            [
+                item.get("severity", ""),
+                item.get("title", ""),
+                item.get("details", ""),
+                item.get("recommendation", ""),
+            ]
+        )
+    return out.getvalue()
+
+
+def _wrap_text(text: str, width: int = 95) -> List[str]:
+    words = (text or "").split()
+    if not words:
+        return [""]
+    lines: List[str] = []
+    current = words[0]
+    for word in words[1:]:
+        if len(current) + 1 + len(word) <= width:
+            current += " " + word
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    return lines
+
+
+def _escape_pdf_text(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+
+def build_pdf_report(result: Dict) -> bytes:
+    scan_type = result.get("scan_type", "scan")
+    generated_at = result.get("generated_at_utc", "")
+    summary = result.get("summary", {}) or {}
+    findings = result.get("findings", []) or []
+
+    lines: List[str] = []
+    lines.append("VulnScanner Report")
+    lines.append(f"Scan Type: {scan_type}")
+    lines.append(f"Generated: {generated_at}")
+    lines.append("")
+    lines.append("Summary")
+    for key in SUMMARY_ORDER:
+        lines.append(f"{key}: {summary.get(key, 0)}")
+    lines.append("")
+    lines.append("Findings")
+
+    if not findings:
+        lines.append("No findings.")
+    else:
+        for idx, item in enumerate(findings, start=1):
+            lines.append(f"{idx}. [{item.get('severity', '')}] {item.get('title', '')}")
+            lines.extend(_wrap_text(f"Details: {item.get('details', '')}"))
+            lines.extend(_wrap_text(f"Recommendation: {item.get('recommendation', '')}"))
+            lines.append("")
+
+    lines_per_page = 48
+    pages: List[List[str]] = []
+    for i in range(0, len(lines), lines_per_page):
+        pages.append(lines[i : i + lines_per_page])
+    if not pages:
+        pages = [["VulnScanner Report", "No content."]]
+
+    objects: List[bytes] = []
+    objects.append(b"<< /Type /Catalog /Pages 2 0 R >>")  # 1
+
+    kids_refs = []
+    for page_index in range(len(pages)):
+        page_obj_num = 4 + page_index * 2
+        kids_refs.append(f"{page_obj_num} 0 R")
+    pages_obj = f"<< /Type /Pages /Kids [{' '.join(kids_refs)}] /Count {len(pages)} >>".encode("latin-1")
+    objects.append(pages_obj)  # 2
+    objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")  # 3
+
+    for page_index, page_lines in enumerate(pages):
+        content_lines = [b"BT", b"/F1 10 Tf", b"50 800 Td", b"14 TL"]
+        first = True
+        for line in page_lines:
+            escaped = _escape_pdf_text(line).encode("latin-1", errors="replace")
+            if first:
+                content_lines.append(b"(" + escaped + b") Tj")
+                first = False
+            else:
+                content_lines.append(b"T*")
+                content_lines.append(b"(" + escaped + b") Tj")
+        content_lines.append(b"ET")
+        content_stream = b"\n".join(content_lines)
+        content_obj = b"<< /Length " + str(len(content_stream)).encode("ascii") + b" >>\nstream\n" + content_stream + b"\nendstream"
+
+        page_obj_num = 4 + page_index * 2
+        content_obj_num = page_obj_num + 1
+        page_obj = (
+            f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+            f"/Resources << /Font << /F1 3 0 R >> >> /Contents {content_obj_num} 0 R >>"
+        ).encode("latin-1")
+
+        objects.append(page_obj)
+        objects.append(content_obj)
+
+    buffer = io.BytesIO()
+    buffer.write(b"%PDF-1.4\n")
+    offsets = [0]
+
+    for idx, obj in enumerate(objects, start=1):
+        offsets.append(buffer.tell())
+        buffer.write(f"{idx} 0 obj\n".encode("ascii"))
+        buffer.write(obj)
+        buffer.write(b"\nendobj\n")
+
+    xref_start = buffer.tell()
+    buffer.write(f"xref\n0 {len(offsets)}\n".encode("ascii"))
+    buffer.write(b"0000000000 65535 f \n")
+    for off in offsets[1:]:
+        buffer.write(f"{off:010d} 00000 n \n".encode("ascii"))
+    buffer.write(
+        f"trailer\n<< /Size {len(offsets)} /Root 1 0 R >>\nstartxref\n{xref_start}\n%%EOF\n".encode("ascii")
+    )
+    return buffer.getvalue()
 
 
 def build_scan_command(form) -> Tuple[List[str], str, int]:
@@ -175,6 +357,7 @@ def index():
     values = dict(DEFAULT_VALUES)
     values["lan_reverse_dns"] = "on"
     result = None
+    export_id = ""
     error = ""
     command_preview = ""
 
@@ -204,6 +387,7 @@ def index():
                 "summary": data.get("summary", {}),
                 "findings": data.get("findings", []),
             }
+            export_id = store_export_result(result)
         except subprocess.TimeoutExpired:
             error = "Scan timed out. Try reducing scan scope or increasing host/port specificity."
         except Exception as exc:
@@ -215,11 +399,42 @@ def index():
         result=result,
         error=error,
         command_preview=command_preview,
+        export_id=export_id,
         scan_types=SCAN_TYPES,
         severities=SEVERITIES,
         summary_order=SUMMARY_ORDER,
         tool_banner=TOOL_BANNER,
     )
+
+
+@app.route("/export/csv/<export_id>", methods=["GET"])
+def export_csv(export_id: str):
+    result = get_export_result(export_id)
+    if not result:
+        abort(404, description="Report not found. Run a new scan and try export again.")
+
+    payload = build_csv_report(result)
+    scan_type = safe_filename_fragment(result.get("scan_type", "scan"))
+    generated = safe_filename_fragment(result.get("generated_at_utc", "report"))
+    filename = f"vscanner_{scan_type}_{generated}.csv"
+    response = Response(payload, content_type="text/csv; charset=utf-8")
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+@app.route("/export/pdf/<export_id>", methods=["GET"])
+def export_pdf(export_id: str):
+    result = get_export_result(export_id)
+    if not result:
+        abort(404, description="Report not found. Run a new scan and try export again.")
+
+    payload = build_pdf_report(result)
+    scan_type = safe_filename_fragment(result.get("scan_type", "scan"))
+    generated = safe_filename_fragment(result.get("generated_at_utc", "report"))
+    filename = f"vscanner_{scan_type}_{generated}.pdf"
+    response = Response(payload, mimetype="application/pdf")
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 if __name__ == "__main__":

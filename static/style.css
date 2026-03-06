@@ -178,6 +178,33 @@ button:hover {
   color: var(--muted);
 }
 
+.export-actions {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(90deg, #0e7c86, #1ea0ad);
+}
+
+.export-btn.pdf {
+  background: linear-gradient(90deg, #bb3524, #da5a44);
+}
+
+.export-btn:hover {
+  filter: brightness(1.04);
+}
+
 .command,
 .error pre {
   margin: 0.5rem 0 0;

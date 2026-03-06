@@ -163,6 +163,12 @@
     <section class="panel">
       <h2>Results</h2>
       <p class="meta">Scan Type: <strong>{{ result.scan_type }}</strong> | Generated: <strong>{{ result.generated_at_utc or 'n/a' }}</strong></p>
+      {% if export_id %}
+      <div class="export-actions">
+        <a class="export-btn" href="{{ url_for('export_csv', export_id=export_id) }}">Export CSV</a>
+        <a class="export-btn pdf" href="{{ url_for('export_pdf', export_id=export_id) }}">Export PDF</a>
+      </div>
+      {% endif %}
       {% if command_preview %}
       <p class="meta">Executed Command:</p>
       <pre class="command">{{ command_preview }}</pre>

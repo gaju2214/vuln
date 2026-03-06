@@ -1,0 +1,70 @@
+VULNSCANNER COMMAND EXAMPLES
+============================
+
+1) Setup (Ubuntu)
+-----------------
+cd /home/gaju/vuln
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+
+2) CLI Help
+-----------
+python3 main.py --help
+python3 main.py network --help
+python3 main.py web --help
+python3 main.py system --help
+python3 main.py lan-scan --help
+
+
+3) Network Scan Examples
+------------------------
+python3 main.py network --host 127.0.0.1 --ports 22,80,443
+python3 main.py network --host 192.168.1.10 --ports 1-1024 --workers 200 --timeout 0.4 --resolve
+python3 main.py network --host example.com --ports 80,443 --tls --min-severity LOW
+python3 main.py network --host 127.0.0.1 --json --out network_report.json
+
+
+4) Web Scan Examples
+--------------------
+python3 main.py web --url https://example.com
+python3 main.py web --url http://example.com --check-methods --check-cookies --check-https-redirect
+python3 main.py web --url https://example.com --timeout 5 --min-severity MEDIUM --json --out web_report.json
+
+
+5) System Scan Examples
+-----------------------
+python3 main.py system
+python3 main.py system --world-writable --ww-paths /etc,/usr/local/bin --ww-limit 30
+python3 main.py system --min-severity LOW --json --out system_report.json
+
+
+6) LAN Scan (Wi-Fi Network) Examples
+------------------------------------
+python3 main.py lan-scan
+python3 main.py lan-scan --subnet 192.168.1.0/24 --ports 22,80,443,445 --discover-ports 22,80,443,445 --workers 200 --host-limit 256
+python3 main.py lan-scan --subnet 192.168.1.0/24 --os-detect --os-max-hosts 10
+python3 main.py lan-scan --subnet 192.168.1.0/24 --json --out lan_report.json
+
+Note:
+- --os-detect uses nmap OS fingerprinting and usually needs sudo.
+
+
+7) Run Web Dashboard
+--------------------
+python3 webapp.py
+
+Open in browser:
+http://127.0.0.1:5000
+
+
+8) Export Reports from Web Dashboard
+------------------------------------
+After running any scan from the web page:
+- Click "Export CSV"
+- Click "Export PDF"
+
+Optional direct URL format (export_id is generated per scan):
+/export/csv/<export_id>
+/export/pdf/<export_id>

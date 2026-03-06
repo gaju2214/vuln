@@ -34,6 +34,7 @@ A lightweight, educational vulnerability scanner for college projects.
 - Severity filtering and report file export (`--out`)
 - CLI ASCII logo shown on tool run (and device-style ASCII cards in `network` / `lan-scan`)
 - Web dashboard (`Flask`) for browser-based scanning
+- Web exports: one-click CSV and PDF download of scan results
 
 ## Legal Notice
 
