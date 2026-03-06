@@ -123,3 +123,4 @@ python3 main.py network --host 127.0.0.1 --json
   Details: Port 22 is reachable on 127.0.0.1.
   Recommendation: Close unused ports or restrict access using firewall rules.
 ```
+# vuln
