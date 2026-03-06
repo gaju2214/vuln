@@ -33,6 +33,7 @@ A lightweight, educational vulnerability scanner for college projects.
 - JSON output option for reporting
 - Severity filtering and report file export (`--out`)
 - CLI ASCII logo shown on tool run (and device-style ASCII cards in `network` / `lan-scan`)
+- Web dashboard (`Flask`) for browser-based scanning
 
 ## Legal Notice
 
@@ -43,7 +44,12 @@ Use this tool only on systems you own or have explicit permission to test.
 ```text
 .
 ├── main.py
+├── webapp.py
 ├── requirements.txt
+├── static
+│   └── style.css
+├── templates
+│   └── index.html
 └── vscanner
     ├── __init__.py
     ├── checks.py
@@ -66,6 +72,18 @@ pip install -r requirements.txt
 
 ```bash
 python3 main.py --help
+```
+
+### Web Dashboard
+
+```bash
+python3 webapp.py
+```
+
+Open:
+
+```text
+http://127.0.0.1:5000
 ```
 
 ### Network Scan
