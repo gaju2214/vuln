@@ -1,0 +1,17 @@
+{
+  "generated_at_utc": "2026-03-06T06:02:33.750160Z",
+  "findings": [
+    {
+      "severity": "LOW",
+      "title": "Unattended security upgrades not enabled",
+      "details": "systemctl returned: failed to connect to bus: operation not permitted (consider using --machine=<user>@.host --user to connect to bus of other user)",
+      "recommendation": "Enable automatic security updates where policy allows."
+    }
+  ],
+  "summary": {
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 1,
+    "INFO": 0
+  }
+}

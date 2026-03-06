@@ -1,0 +1,24 @@
+[INFO] Detected local subnet
+  Details: Interface wlp2s0 with address 192.168.31.23/24 mapped to subnet 192.168.31.0/24.
+  Recommendation: Scan only networks you own or are authorized to test.
+[INFO] LAN discovery completed
+  Details: Discovered 2 live host(s) in 192.168.31.0/24.
+  Recommendation: Run targeted scans on critical assets first.
+[INFO] Live host: 192.168.31.1
+  Details: Target discovered: 192.168.31.1 (XiaoQiang)
+  Recommendation: Review exposed services for this host.
+[MEDIUM] Open port detected: 80
+  Details: Port 80 is reachable on 192.168.31.1.
+  Recommendation: Close unused ports or restrict access using firewall rules.
+[LOW] Open port detected: 443
+  Details: Port 443 is reachable on 192.168.31.1.
+  Recommendation: Close unused ports or restrict access using firewall rules.
+[INFO] Live host: 192.168.31.23
+  Details: Target discovered: 192.168.31.23 (arcrector)
+  Recommendation: Review exposed services for this host.
+[MEDIUM] Open port detected: 80
+  Details: Port 80 is reachable on 192.168.31.23.
+  Recommendation: Close unused ports or restrict access using firewall rules.
+
+Summary:
+  HIGH=0  MEDIUM=2  LOW=1  INFO=4

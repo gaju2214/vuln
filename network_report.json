@@ -1,0 +1,23 @@
+{
+  "generated_at_utc": "2026-03-06T06:03:52.174849Z",
+  "findings": [
+    {
+      "severity": "MEDIUM",
+      "title": "Open port detected: 80",
+      "details": "Port 80 is reachable on 127.0.0.1.",
+      "recommendation": "Close unused ports or restrict access using firewall rules."
+    },
+    {
+      "severity": "LOW",
+      "title": "Open port detected: 631",
+      "details": "Port 631 is reachable on 127.0.0.1.",
+      "recommendation": "Close unused ports or restrict access using firewall rules."
+    }
+  ],
+  "summary": {
+    "HIGH": 0,
+    "MEDIUM": 1,
+    "LOW": 1,
+    "INFO": 0
+  }
+}

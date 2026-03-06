@@ -1,0 +1,23 @@
+{
+  "generated_at_utc": "2026-03-06T06:14:44.208904Z",
+  "findings": [
+    {
+      "severity": "INFO",
+      "title": "Using provided subnet",
+      "details": "LAN scan subnet set to 192.168.1.0/24.",
+      "recommendation": "Ensure this subnet is in your authorized test scope."
+    },
+    {
+      "severity": "INFO",
+      "title": "LAN discovery completed",
+      "details": "Discovered 0 live host(s) in 192.168.1.0/24.",
+      "recommendation": "Run targeted scans on critical assets first."
+    }
+  ],
+  "summary": {
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "INFO": 2
+  }
+}

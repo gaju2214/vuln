@@ -1,0 +1,24 @@
+[MEDIUM] Missing HTTP security header: Content-Security-Policy
+  Details: Content-Security-Policy is not present in the response from https://www.scaips.in.
+  Recommendation: Define a strict CSP to reduce XSS risk.
+[LOW] Missing HTTP security header: X-Content-Type-Options
+  Details: X-Content-Type-Options is not present in the response from https://www.scaips.in.
+  Recommendation: Set to 'nosniff' to prevent MIME sniffing.
+[LOW] Missing HTTP security header: X-Frame-Options
+  Details: X-Frame-Options is not present in the response from https://www.scaips.in.
+  Recommendation: Set to DENY or SAMEORIGIN to reduce clickjacking.
+[MEDIUM] Missing HTTP security header: Strict-Transport-Security
+  Details: Strict-Transport-Security is not present in the response from https://www.scaips.in.
+  Recommendation: Enable HSTS for HTTPS-only transport.
+[LOW] Missing HTTP security header: Referrer-Policy
+  Details: Referrer-Policy is not present in the response from https://www.scaips.in.
+  Recommendation: Set a restrictive referrer policy.
+[LOW] Server version disclosure
+  Details: https://www.scaips.in leaks server header detail: nginx/1.18.0 (Ubuntu)
+  Recommendation: Reduce server banner detail in production responses.
+[INFO] HTTP methods check skipped
+  Details: Could not issue OPTIONS request: HTTP Error 405: Not Allowed
+  Recommendation: Verify the endpoint is reachable and allows OPTIONS checks.
+
+Summary:
+  HIGH=0  MEDIUM=2  LOW=4  INFO=1
