@@ -7,211 +7,249 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <div class="noise"></div>
-  <main class="shell">
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+
+  <main class="page">
     <header class="hero">
+      <div class="hero-text">
+        <p class="eyebrow">Security Console</p>
+        <h1>VulnScanner Web Deck</h1>
+        <p class="subtitle">Run scans, inspect findings, and export CSV/PDF reports from one dashboard.</p>
+      </div>
       <pre class="logo">{{ tool_banner }}</pre>
-      <h1>VulnScanner Web Console</h1>
-      <p>Run your existing CLI vulnerability scans from a browser UI.</p>
     </header>
 
-    <section class="panel">
-      <h2>Run Scan</h2>
-      <form id="scan-form" method="post">
-        <div class="grid two">
-          <label>
-            Scan Type
-            <select name="scan_type" id="scan_type">
-              {% for scan in scan_types %}
-              <option value="{{ scan }}" {% if values.get("scan_type") == scan %}selected{% endif %}>{{ scan }}</option>
-              {% endfor %}
-            </select>
-          </label>
-          <label>
-            Optional Report Save Path
-            <input type="text" name="save_report_path" value="{{ values.get('save_report_path', '') }}" placeholder="/home/gaju/vuln/report.json">
-          </label>
+    <section class="workspace">
+      <article class="panel control-panel">
+        <h2>Configure Scan</h2>
+        <p class="panel-note">Select scan mode and run with your target settings.</p>
+
+        <form id="scan-form" method="post">
+          <div class="scan-type-switch" role="group" aria-label="Scan type quick selector">
+            <button type="button" class="mode-btn" data-target="network">Network</button>
+            <button type="button" class="mode-btn" data-target="lan-scan">LAN</button>
+            <button type="button" class="mode-btn" data-target="web">Web</button>
+            <button type="button" class="mode-btn" data-target="system">System</button>
+          </div>
+
+          <div class="grid two">
+            <label>
+              Scan Type
+              <select name="scan_type" id="scan_type">
+                {% for scan in scan_types %}
+                <option value="{{ scan }}" {% if values.get("scan_type") == scan %}selected{% endif %}>{{ scan }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>
+              Optional Report Save Path
+              <input type="text" name="save_report_path" value="{{ values.get('save_report_path', '') }}" placeholder="/home/gaju/vuln/report.json">
+            </label>
+          </div>
+
+          <section class="scan-block" data-scan="network">
+            <h3>Network Scan</h3>
+            <div class="grid three">
+              <label>Host
+                <input type="text" name="network_host" value="{{ values.get('network_host', '') }}" placeholder="127.0.0.1">
+              </label>
+              <label>Ports
+                <input type="text" name="network_ports" value="{{ values.get('network_ports', '') }}" placeholder="22,80,443">
+              </label>
+              <label>Min Severity
+                <select name="network_min_severity">
+                  {% for sev in severities %}
+                  <option value="{{ sev }}" {% if values.get("network_min_severity") == sev %}selected{% endif %}>{{ sev }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>Timeout (seconds)
+                <input type="text" name="network_timeout" value="{{ values.get('network_timeout', '') }}">
+              </label>
+              <label>Workers
+                <input type="text" name="network_workers" value="{{ values.get('network_workers', '') }}">
+              </label>
+            </div>
+            <div class="checks">
+              <label><input type="checkbox" name="network_tls" {% if values.get('network_tls') == 'on' %}checked{% endif %}> TLS Cert Check</label>
+              <label><input type="checkbox" name="network_resolve" {% if values.get('network_resolve') == 'on' %}checked{% endif %}> Resolve DNS</label>
+            </div>
+          </section>
+
+          <section class="scan-block" data-scan="lan-scan">
+            <h3>LAN Scan</h3>
+            <div class="grid three">
+              <label>Subnet (optional)
+                <input type="text" name="lan_subnet" value="{{ values.get('lan_subnet', '') }}" placeholder="192.168.1.0/24">
+              </label>
+              <label>Target Ports
+                <input type="text" name="lan_ports" value="{{ values.get('lan_ports', '') }}">
+              </label>
+              <label>Discovery Ports
+                <input type="text" name="lan_discover_ports" value="{{ values.get('lan_discover_ports', '') }}">
+              </label>
+              <label>Timeout (seconds)
+                <input type="text" name="lan_timeout" value="{{ values.get('lan_timeout', '') }}">
+              </label>
+              <label>Workers
+                <input type="text" name="lan_workers" value="{{ values.get('lan_workers', '') }}">
+              </label>
+              <label>Host Limit
+                <input type="text" name="lan_host_limit" value="{{ values.get('lan_host_limit', '') }}">
+              </label>
+              <label>OS Max Hosts
+                <input type="text" name="lan_os_max_hosts" value="{{ values.get('lan_os_max_hosts', '') }}">
+              </label>
+              <label>Min Severity
+                <select name="lan_min_severity">
+                  {% for sev in severities %}
+                  <option value="{{ sev }}" {% if values.get("lan_min_severity") == sev %}selected{% endif %}>{{ sev }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+            </div>
+            <div class="checks">
+              <label><input type="checkbox" name="lan_reverse_dns" {% if values.get('lan_reverse_dns') == 'on' %}checked{% endif %}> Reverse DNS</label>
+              <label><input type="checkbox" name="lan_os_detect" {% if values.get('lan_os_detect') == 'on' %}checked{% endif %}> OS Detect (nmap)</label>
+            </div>
+          </section>
+
+          <section class="scan-block" data-scan="web">
+            <h3>Web Scan</h3>
+            <div class="grid three">
+              <label>URL
+                <input type="text" name="web_url" value="{{ values.get('web_url', '') }}" placeholder="https://example.com">
+              </label>
+              <label>Timeout (seconds)
+                <input type="text" name="web_timeout" value="{{ values.get('web_timeout', '') }}">
+              </label>
+              <label>Min Severity
+                <select name="web_min_severity">
+                  {% for sev in severities %}
+                  <option value="{{ sev }}" {% if values.get("web_min_severity") == sev %}selected{% endif %}>{{ sev }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+            </div>
+            <div class="checks">
+              <label><input type="checkbox" name="web_check_methods" {% if values.get('web_check_methods') == 'on' %}checked{% endif %}> Check Methods</label>
+              <label><input type="checkbox" name="web_check_cookies" {% if values.get('web_check_cookies') == 'on' %}checked{% endif %}> Check Cookies</label>
+              <label><input type="checkbox" name="web_check_https_redirect" {% if values.get('web_check_https_redirect') == 'on' %}checked{% endif %}> Check HTTPS Redirect</label>
+            </div>
+          </section>
+
+          <section class="scan-block" data-scan="system">
+            <h3>System Scan</h3>
+            <div class="grid three">
+              <label>World-Writable Paths
+                <input type="text" name="system_ww_paths" value="{{ values.get('system_ww_paths', '') }}">
+              </label>
+              <label>World-Writable Limit
+                <input type="text" name="system_ww_limit" value="{{ values.get('system_ww_limit', '') }}">
+              </label>
+              <label>Min Severity
+                <select name="system_min_severity">
+                  {% for sev in severities %}
+                  <option value="{{ sev }}" {% if values.get("system_min_severity") == sev %}selected{% endif %}>{{ sev }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+            </div>
+            <div class="checks">
+              <label><input type="checkbox" name="system_world_writable" {% if values.get('system_world_writable') == 'on' %}checked{% endif %}> Enable World-Writable Scan</label>
+            </div>
+          </section>
+
+          <div class="actions">
+            <button type="submit">Run Scan</button>
+          </div>
+        </form>
+      </article>
+
+      <article class="panel result-panel">
+        <h2>Results</h2>
+        <p class="panel-note">Latest scan output appears here.</p>
+
+        {% if error %}
+        <section class="error-box">
+          <h3>Scan Error</h3>
+          <pre>{{ error }}</pre>
+        </section>
+        {% endif %}
+
+        {% if result %}
+        <p class="meta">Scan Type: <strong>{{ result.scan_type }}</strong></p>
+        <p class="meta">Generated: <strong>{{ result.generated_at_utc or 'n/a' }}</strong></p>
+        {% if export_id %}
+        <div class="export-actions">
+          <a class="export-btn" href="{{ url_for('export_csv', export_id=export_id) }}">Export CSV</a>
+          <a class="export-btn pdf" href="{{ url_for('export_pdf', export_id=export_id) }}">Export PDF</a>
         </div>
+        {% endif %}
 
-        <section class="scan-block" data-scan="network">
-          <h3>Network</h3>
-          <div class="grid three">
-            <label>Host
-              <input type="text" name="network_host" value="{{ values.get('network_host', '') }}" placeholder="127.0.0.1">
-            </label>
-            <label>Ports
-              <input type="text" name="network_ports" value="{{ values.get('network_ports', '') }}" placeholder="22,80,443">
-            </label>
-            <label>Min Severity
-              <select name="network_min_severity">
-                {% for sev in severities %}
-                <option value="{{ sev }}" {% if values.get("network_min_severity") == sev %}selected{% endif %}>{{ sev }}</option>
-                {% endfor %}
-              </select>
-            </label>
-            <label>Timeout (seconds)
-              <input type="text" name="network_timeout" value="{{ values.get('network_timeout', '') }}">
-            </label>
-            <label>Workers
-              <input type="text" name="network_workers" value="{{ values.get('network_workers', '') }}">
-            </label>
-          </div>
-          <div class="checks">
-            <label><input type="checkbox" name="network_tls" {% if values.get('network_tls') == 'on' %}checked{% endif %}> TLS Cert Check</label>
-            <label><input type="checkbox" name="network_resolve" {% if values.get('network_resolve') == 'on' %}checked{% endif %}> Resolve DNS</label>
-          </div>
-        </section>
+        {% if command_preview %}
+        <p class="meta">Executed Command:</p>
+        <pre class="command">{{ command_preview }}</pre>
+        {% endif %}
 
-        <section class="scan-block" data-scan="lan-scan">
-          <h3>LAN Scan</h3>
-          <div class="grid three">
-            <label>Subnet (optional)
-              <input type="text" name="lan_subnet" value="{{ values.get('lan_subnet', '') }}" placeholder="192.168.1.0/24">
-            </label>
-            <label>Target Ports
-              <input type="text" name="lan_ports" value="{{ values.get('lan_ports', '') }}">
-            </label>
-            <label>Discovery Ports
-              <input type="text" name="lan_discover_ports" value="{{ values.get('lan_discover_ports', '') }}">
-            </label>
-            <label>Timeout (seconds)
-              <input type="text" name="lan_timeout" value="{{ values.get('lan_timeout', '') }}">
-            </label>
-            <label>Workers
-              <input type="text" name="lan_workers" value="{{ values.get('lan_workers', '') }}">
-            </label>
-            <label>Host Limit
-              <input type="text" name="lan_host_limit" value="{{ values.get('lan_host_limit', '') }}">
-            </label>
-            <label>OS Max Hosts
-              <input type="text" name="lan_os_max_hosts" value="{{ values.get('lan_os_max_hosts', '') }}">
-            </label>
-            <label>Min Severity
-              <select name="lan_min_severity">
-                {% for sev in severities %}
-                <option value="{{ sev }}" {% if values.get("lan_min_severity") == sev %}selected{% endif %}>{{ sev }}</option>
-                {% endfor %}
-              </select>
-            </label>
-          </div>
-          <div class="checks">
-            <label><input type="checkbox" name="lan_reverse_dns" {% if values.get('lan_reverse_dns') == 'on' %}checked{% endif %}> Reverse DNS</label>
-            <label><input type="checkbox" name="lan_os_detect" {% if values.get('lan_os_detect') == 'on' %}checked{% endif %}> OS Detect (nmap)</label>
-          </div>
-        </section>
-
-        <section class="scan-block" data-scan="web">
-          <h3>Web</h3>
-          <div class="grid three">
-            <label>URL
-              <input type="text" name="web_url" value="{{ values.get('web_url', '') }}" placeholder="https://example.com">
-            </label>
-            <label>Timeout (seconds)
-              <input type="text" name="web_timeout" value="{{ values.get('web_timeout', '') }}">
-            </label>
-            <label>Min Severity
-              <select name="web_min_severity">
-                {% for sev in severities %}
-                <option value="{{ sev }}" {% if values.get("web_min_severity") == sev %}selected{% endif %}>{{ sev }}</option>
-                {% endfor %}
-              </select>
-            </label>
-          </div>
-          <div class="checks">
-            <label><input type="checkbox" name="web_check_methods" {% if values.get('web_check_methods') == 'on' %}checked{% endif %}> Check Methods</label>
-            <label><input type="checkbox" name="web_check_cookies" {% if values.get('web_check_cookies') == 'on' %}checked{% endif %}> Check Cookies</label>
-            <label><input type="checkbox" name="web_check_https_redirect" {% if values.get('web_check_https_redirect') == 'on' %}checked{% endif %}> Check HTTPS Redirect</label>
-          </div>
-        </section>
-
-        <section class="scan-block" data-scan="system">
-          <h3>System</h3>
-          <div class="grid three">
-            <label>World-Writable Paths
-              <input type="text" name="system_ww_paths" value="{{ values.get('system_ww_paths', '') }}">
-            </label>
-            <label>World-Writable Limit
-              <input type="text" name="system_ww_limit" value="{{ values.get('system_ww_limit', '') }}">
-            </label>
-            <label>Min Severity
-              <select name="system_min_severity">
-                {% for sev in severities %}
-                <option value="{{ sev }}" {% if values.get("system_min_severity") == sev %}selected{% endif %}>{{ sev }}</option>
-                {% endfor %}
-              </select>
-            </label>
-          </div>
-          <div class="checks">
-            <label><input type="checkbox" name="system_world_writable" {% if values.get('system_world_writable') == 'on' %}checked{% endif %}> Enable World-Writable Scan</label>
-          </div>
-        </section>
-
-        <div class="actions">
-          <button type="submit">Run Scan</button>
-        </div>
-      </form>
-    </section>
-
-    {% if error %}
-    <section class="panel error">
-      <h2>Scan Error</h2>
-      <pre>{{ error }}</pre>
-    </section>
-    {% endif %}
-
-    {% if result %}
-    <section class="panel">
-      <h2>Results</h2>
-      <p class="meta">Scan Type: <strong>{{ result.scan_type }}</strong> | Generated: <strong>{{ result.generated_at_utc or 'n/a' }}</strong></p>
-      {% if export_id %}
-      <div class="export-actions">
-        <a class="export-btn" href="{{ url_for('export_csv', export_id=export_id) }}">Export CSV</a>
-        <a class="export-btn pdf" href="{{ url_for('export_pdf', export_id=export_id) }}">Export PDF</a>
-      </div>
-      {% endif %}
-      {% if command_preview %}
-      <p class="meta">Executed Command:</p>
-      <pre class="command">{{ command_preview }}</pre>
-      {% endif %}
-
-      <div class="summary">
-        {% for key in summary_order %}
-        <article class="sum-card sev-{{ key|lower }}">
-          <span>{{ key }}</span>
-          <strong>{{ result.summary.get(key, 0) }}</strong>
-        </article>
-        {% endfor %}
-      </div>
-
-      <div class="findings">
-        {% if result.findings %}
-          {% for item in result.findings %}
-          <article class="finding sev-{{ item.severity|lower }}">
-            <h3>[{{ item.severity }}] {{ item.title }}</h3>
-            <p><strong>Details:</strong> {{ item.details }}</p>
-            <p><strong>Recommendation:</strong> {{ item.recommendation }}</p>
+        <div class="summary">
+          {% for key in summary_order %}
+          <article class="sum-card sev-{{ key|lower }}">
+            <span>{{ key }}</span>
+            <strong>{{ result.summary.get(key, 0) }}</strong>
           </article>
           {% endfor %}
+        </div>
+
+        <div class="findings">
+          {% if result.findings %}
+            {% for item in result.findings %}
+            <article class="finding sev-{{ item.severity|lower }}">
+              <h3>[{{ item.severity }}] {{ item.title }}</h3>
+              <p><strong>Details:</strong> {{ item.details }}</p>
+              <p><strong>Recommendation:</strong> {{ item.recommendation }}</p>
+            </article>
+            {% endfor %}
+          {% else %}
+            <article class="finding">
+              <h3>No findings</h3>
+            </article>
+          {% endif %}
+        </div>
         {% else %}
-          <article class="finding">
-            <h3>No findings</h3>
-          </article>
+        <section class="empty-state">
+          <h3>No scan run yet</h3>
+          <p>Set parameters on the left and click <strong>Run Scan</strong>.</p>
+        </section>
         {% endif %}
-      </div>
+      </article>
     </section>
-    {% endif %}
   </main>
 
   <script>
     (function () {
       const select = document.getElementById("scan_type");
       const blocks = document.querySelectorAll(".scan-block");
+      const modeButtons = document.querySelectorAll(".mode-btn");
+
       function updateBlocks() {
         const chosen = select.value;
         blocks.forEach((block) => {
           block.style.display = block.dataset.scan === chosen ? "block" : "none";
         });
+        modeButtons.forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.target === chosen);
+        });
       }
+
+      modeButtons.forEach((btn) => {
+        btn.addEventListener("click", function () {
+          select.value = btn.dataset.target;
+          updateBlocks();
+        });
+      });
+
       select.addEventListener("change", updateBlocks);
       updateBlocks();
     })();
